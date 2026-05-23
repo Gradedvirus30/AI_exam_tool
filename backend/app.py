@@ -9,24 +9,41 @@ import requests
 app = FastAPI()
 
 
-# Request model
+# -------------------------
+# Request Models
+# -------------------------
+
 class Question(BaseModel):
     question: str
 
 
-# Load embedding model
+class SummaryRequest(BaseModel):
+    topic: str
+
+
+# -------------------------
+# Load Embedding Model
+# -------------------------
+
 embedding_model = SentenceTransformer(
     "all-MiniLM-L6-v2"
 )
 
 
-# Create/load vector database
+# -------------------------
+# Create Vector Database
+# -------------------------
+
 client = chromadb.Client()
 
 collection = client.get_or_create_collection(
     "notes"
 )
 
+
+# -------------------------
+# Home Route
+# -------------------------
 
 @app.get("/")
 def home():
@@ -36,12 +53,16 @@ def home():
     }
 
 
+# -------------------------
+# Upload PDF
+# -------------------------
+
 @app.post("/upload")
 async def upload_pdf(file: UploadFile):
 
-    # Save uploaded PDF
     file_path = f"uploads/{file.filename}"
 
+    # Save uploaded file
     with open(file_path, "wb") as f:
         f.write(await file.read())
 
@@ -57,7 +78,7 @@ async def upload_pdf(file: UploadFile):
         if extracted:
             text += extracted
 
-    # Split text
+    # Split text into chunks
     splitter = RecursiveCharacterTextSplitter(
         chunk_size=500,
         chunk_overlap=100
@@ -70,34 +91,48 @@ async def upload_pdf(file: UploadFile):
         chunks
     )
 
-    # Store in database
+    # Clear previous notes
+    existing = collection.get()
+
+    if existing["ids"]:
+
+        collection.delete(
+            ids=existing["ids"]
+        )
+
+    # Store new notes
     collection.add(
         documents=chunks,
         embeddings=embeddings.tolist(),
-        ids=[str(i) for i in range(len(chunks))]
+        ids=[
+            f"{file.filename}_{i}"
+            for i in range(len(chunks))
+        ]
     )
 
     return {
+
         "filename": file.filename,
         "total_chunks": len(chunks),
         "embeddings_created": len(embeddings)
+
     }
 
+
+# -------------------------
+# Ask Questions
+# -------------------------
 
 @app.post("/ask")
 async def ask_question(data: Question):
 
-    # Find relevant chunks
     results = collection.query(
         query_texts=[data.question],
-        n_results=3
+        n_results=1
     )
 
-    context = "\n".join(
-        results["documents"][0]
-    )
+    context = results["documents"][0][0]
 
-    # Prompt for Ollama
     prompt = f"""
 Context:
 {context}
@@ -105,14 +140,16 @@ Context:
 Question:
 {data.question}
 
-Explain clearly for an engineering student.
+Rules:
+- Answer only from context
+- Maximum 3 sentences
+- Keep concise
 """
 
-    # Send to Ollama
     response = requests.post(
         "http://localhost:11434/api/generate",
         json={
-            "model": "llama3",
+            "model": "phi3:mini",
             "prompt": prompt,
             "stream": False,
             "keep_alive": "10m"
@@ -124,4 +161,51 @@ Explain clearly for an engineering student.
     return {
         "question": data.question,
         "answer": answer
+    }
+
+
+# -------------------------
+# Generate Summary
+# -------------------------
+
+@app.post("/summary")
+async def generate_summary(data: SummaryRequest):
+
+    results = collection.query(
+        query_texts=[data.topic],
+        n_results=2
+    )
+
+    context = "\n".join(
+        results["documents"][0]
+    )
+
+    prompt = f"""
+Context:
+{context}
+
+Generate short exam notes.
+
+Rules:
+- Maximum 6 bullet points
+- Use ONLY information from context
+- Do not add outside knowledge
+- Keep concise
+"""
+
+    response = requests.post(
+        "http://localhost:11434/api/generate",
+        json={
+            "model": "phi3:mini",
+            "prompt": prompt,
+            "stream": False,
+            "keep_alive": "10m"
+        }
+    )
+
+    summary = response.json()["response"]
+
+    return {
+        "topic": data.topic,
+        "summary": summary
     }

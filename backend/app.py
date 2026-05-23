@@ -8,7 +8,6 @@ import requests
 
 app = FastAPI()
 
-
 # -------------------------
 # Request Models
 # -------------------------
@@ -21,8 +20,12 @@ class SummaryRequest(BaseModel):
     topic: str
 
 
+class QuizRequest(BaseModel):
+    topic: str
+
+
 # -------------------------
-# Load Embedding Model
+# Embedding Model
 # -------------------------
 
 embedding_model = SentenceTransformer(
@@ -31,7 +34,7 @@ embedding_model = SentenceTransformer(
 
 
 # -------------------------
-# Create Vector Database
+# Vector Database
 # -------------------------
 
 client = chromadb.Client()
@@ -42,7 +45,37 @@ collection = client.get_or_create_collection(
 
 
 # -------------------------
-# Home Route
+# Shared Ollama Function
+# -------------------------
+
+def generate_from_ollama(prompt):
+
+    try:
+
+        response = requests.post(
+            "http://localhost:11434/api/generate",
+            json={
+                "model": "phi3:mini",
+                "prompt": prompt,
+                "stream": False,
+                "keep_alive": "10m"
+            },
+            timeout=60
+        )
+
+        response.raise_for_status()
+
+        result = response.json()
+
+        return result["response"]
+
+    except Exception as e:
+
+        return f"Error from Ollama: {str(e)}"
+
+
+# -------------------------
+# Home
 # -------------------------
 
 @app.get("/")
@@ -62,11 +95,9 @@ async def upload_pdf(file: UploadFile):
 
     file_path = f"uploads/{file.filename}"
 
-    # Save uploaded file
     with open(file_path, "wb") as f:
         f.write(await file.read())
 
-    # Read PDF
     reader = PdfReader(file_path)
 
     text = ""
@@ -78,7 +109,6 @@ async def upload_pdf(file: UploadFile):
         if extracted:
             text += extracted
 
-    # Split text into chunks
     splitter = RecursiveCharacterTextSplitter(
         chunk_size=500,
         chunk_overlap=100
@@ -86,12 +116,10 @@ async def upload_pdf(file: UploadFile):
 
     chunks = splitter.split_text(text)
 
-    # Create embeddings
     embeddings = embedding_model.encode(
         chunks
     )
 
-    # Clear previous notes
     existing = collection.get()
 
     if existing["ids"]:
@@ -100,7 +128,6 @@ async def upload_pdf(file: UploadFile):
             ids=existing["ids"]
         )
 
-    # Store new notes
     collection.add(
         documents=chunks,
         embeddings=embeddings.tolist(),
@@ -131,6 +158,12 @@ async def ask_question(data: Question):
         n_results=1
     )
 
+    if not results["documents"][0]:
+
+        return {
+            "error": "No matching notes found"
+        }
+
     context = results["documents"][0][0]
 
     prompt = f"""
@@ -141,31 +174,24 @@ Question:
 {data.question}
 
 Rules:
-- Answer only from context
 - Maximum 3 sentences
-- Keep concise
+- Answer only from context
 """
 
-    response = requests.post(
-        "http://localhost:11434/api/generate",
-        json={
-            "model": "phi3:mini",
-            "prompt": prompt,
-            "stream": False,
-            "keep_alive": "10m"
-        }
+    answer = generate_from_ollama(
+        prompt
     )
 
-    answer = response.json()["response"]
-
     return {
+
         "question": data.question,
         "answer": answer
+
     }
 
 
 # -------------------------
-# Generate Summary
+# Summary
 # -------------------------
 
 @app.post("/summary")
@@ -175,6 +201,12 @@ async def generate_summary(data: SummaryRequest):
         query_texts=[data.topic],
         n_results=2
     )
+
+    if not results["documents"][0]:
+
+        return {
+            "error": "No matching notes found"
+        }
 
     context = "\n".join(
         results["documents"][0]
@@ -188,24 +220,90 @@ Generate short exam notes.
 
 Rules:
 - Maximum 6 bullet points
-- Use ONLY information from context
-- Do not add outside knowledge
+- Use only information from context
 - Keep concise
 """
 
-    response = requests.post(
-        "http://localhost:11434/api/generate",
-        json={
-            "model": "phi3:mini",
-            "prompt": prompt,
-            "stream": False,
-            "keep_alive": "10m"
-        }
+    summary = generate_from_ollama(
+        prompt
     )
 
-    summary = response.json()["response"]
+    return {
+
+        "topic": data.topic,
+        "summary": summary
+
+    }
+
+
+# -------------------------
+# Quiz
+# -------------------------
+
+@app.post("/quiz")
+async def generate_quiz(data: QuizRequest):
+
+    results = collection.query(
+        query_texts=[data.topic],
+        n_results=2
+    )
+
+    if not results["documents"][0]:
+
+        return {
+            "error": "No matching notes found"
+        }
+
+    context = "\n".join(
+        results["documents"][0]
+    )
+
+    prompt = f"""
+Context:
+{context}
+
+You MUST generate exactly:
+
+MCQ 1:
+Question:
+A)
+B)
+C)
+D)
+
+MCQ 2:
+Question:
+A)
+B)
+C)
+D)
+
+MCQ 3:
+Question:
+A)
+B)
+C)
+D)
+
+Short Question 1:
+
+Short Question 2:
+
+Long Question:
+
+IMPORTANT:
+- Do not skip any section
+- Create all 6 questions
+- No answers
+- Use only context information
+- If context is limited, still create all sections
+"""
+
+    quiz = generate_from_ollama(
+        prompt
+    )
 
     return {
         "topic": data.topic,
-        "summary": summary
+        "quiz": quiz
     }

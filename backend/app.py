@@ -23,7 +23,12 @@ class SummaryRequest(BaseModel):
 class QuizRequest(BaseModel):
     topic: str
 
+
 class RevisionRequest(BaseModel):
+    topic: str
+
+
+class FlashcardRequest(BaseModel):
     topic: str
 
 
@@ -350,5 +355,63 @@ Rules:
 
         "topic": data.topic,
         "revision": revision
+
+    }
+
+class FlashcardRequest(BaseModel):
+    topic: str
+
+
+@app.post("/flashcards")
+async def generate_flashcards(data: FlashcardRequest):
+
+    results = collection.query(
+        query_texts=[data.topic],
+        n_results=1
+    )
+
+    if not results["documents"][0]:
+
+        return {
+            "error": "No matching notes found"
+        }
+
+    context = results["documents"][0][0]
+
+    prompt = f"""
+Context:
+{context}
+
+Create flashcards.
+
+Format exactly:
+
+Flashcard 1:
+Q:
+A:
+
+Flashcard 2:
+Q:
+A:
+
+Flashcard 3:
+Q:
+A:
+
+Rules:
+- Exactly 3 flashcards
+- Answers maximum 1 sentence
+- Use only context
+- Keep concise
+"""
+
+    flashcards = generate_from_ollama(
+        prompt
+    )
+
+    return {
+
+        "topic": data.topic,
+        "flashcards": flashcards
 
     }

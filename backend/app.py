@@ -23,6 +23,9 @@ class SummaryRequest(BaseModel):
 class QuizRequest(BaseModel):
     topic: str
 
+class RevisionRequest(BaseModel):
+    topic: str
+
 
 # -------------------------
 # Embedding Model
@@ -306,4 +309,46 @@ IMPORTANT:
     return {
         "topic": data.topic,
         "quiz": quiz
+    }
+
+@app.post("/revision")
+async def generate_revision(data: RevisionRequest):
+
+    results = collection.query(
+        query_texts=[data.topic],
+        n_results=1
+    )
+
+    if not results["documents"][0]:
+
+        return {
+            "error": "No matching notes found"
+        }
+
+    context = results["documents"][0][0]
+
+    prompt = f"""
+Context:
+{context}
+
+Create a one-night-before-exam revision sheet.
+
+Rules:
+- Important concepts
+- Must remember points
+- Exam tips
+- Maximum 6 bullet points
+- Keep concise
+- Use only context
+"""
+
+    revision = generate_from_ollama(
+        prompt
+    )
+
+    return {
+
+        "topic": data.topic,
+        "revision": revision
+
     }

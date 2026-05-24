@@ -1,152 +1,145 @@
 import "./App.css";
-import axios from "axios";
+
 import { useState } from "react";
+
+import Upload from "./components/Upload";
+import Ask from "./components/Ask";
+import Summary from "./components/Summary";
+import Revision from "./components/Revision";
+import Quiz from "./components/Quiz";
+import Flashcards from "./components/Flashcards";
+
 
 function App() {
 
-  const [file, setFile] = useState(null);
+const [activeTab,setActiveTab]=
+useState("upload");
 
-  const [message, setMessage] = useState("");
+
+return(
+
+<div className="app">
+
+<div className="sidebar">
+
+<h2>AI Exam Assistant</h2>
 
 
-  const uploadPDF = async () => {
-
-    if (!file) {
-
-      setMessage(
-        "Please choose a PDF"
-      );
-
-      return;
-    }
-
-    const formData =
-    new FormData();
-
-    formData.append(
-      "file",
-      file
-    );
-
-    try {
-
-    const response =
-    await axios.post(
-        "http://127.0.0.1:8000/upload",
-        formData
-    );
-
-    console.log(
-      "Backend response:",
-      response.data
-    );
-
-    setMessage(
-      `Uploaded successfully: ${response.data.filename}`
-    );
-
+<button
+onClick={()=>
+setActiveTab(
+"upload"
+)
 }
-    catch (error) {
+>
 
-    console.log(
-      "FULL ERROR:",
-      error
-    );
+📄 Upload PDF
 
-    if(error.response){
+</button>
 
-      console.log(
-        error.response.data
-      );
 
-    }
-
-    setMessage(
-      `Error: ${error.message}`
-    );
-
+<button
+onClick={()=>
+setActiveTab(
+"ask"
+)
 }
+>
 
-  };
+❓ Ask
 
-
-  return (
-
-    <div className="app">
-
-      <div className="sidebar">
-
-        <h2>AI Exam Assistant</h2>
-
-        <button>📄 Upload PDF</button>
-
-        <button>❓ Ask</button>
-
-        <button>📝 Summary</button>
-
-        <button>🧠 Revision</button>
-
-        <button>🎯 Quiz</button>
-
-        <button>🗂 Flashcards</button>
-
-      </div>
+</button>
 
 
-      <div className="main">
+<button
+onClick={()=>
+setActiveTab(
+"summary"
+)
+}
+>
 
-        <h1>Dashboard</h1>
+📝 Summary
 
-        <div className="card">
-
-          <h3>Upload Notes</h3>
-
-          <input
-            type="file"
-            accept=".pdf"
-            onChange={(e) => {
-
-              const selectedFile =
-              e.target.files[0];
-
-              setFile(
-                selectedFile
-              );
-
-            }}
-          />
-
-          <button
-            onClick={uploadPDF}
-          >
-
-            Upload
-
-          </button>
+</button>
 
 
-          <p className="warning">
+<button
+onClick={()=>
+setActiveTab(
+"revision"
+)
+}
+>
 
-            ⚠ Recommended:
-            Keep PDFs under 100 pages
-            for faster processing and better performance
+🧠 Revision
 
-          </p>
+</button>
 
 
-          <p>
+<button
+onClick={()=>
+setActiveTab(
+"quiz"
+)
+}
+>
 
-            {message}
+🎯 Quiz
 
-          </p>
+</button>
 
-        </div>
 
-      </div>
+<button
+onClick={()=>
+setActiveTab(
+"flashcards"
+)
+}
+>
 
-    </div>
+🗂 Flashcards
 
-  );
+</button>
+
+</div>
+
+
+
+<div className="main">
+
+<h1>Dashboard</h1>
+
+
+{activeTab==="upload"
+&& <Upload/>}
+
+
+{activeTab==="ask"
+&& <Ask/>}
+
+
+{activeTab==="summary"
+&& <Summary/>}
+
+
+{activeTab==="revision"
+&& <Revision/>}
+
+
+{activeTab==="quiz"
+&& <Quiz/>}
+
+
+{activeTab==="flashcards"
+&& <Flashcards/>}
+
+
+</div>
+
+</div>
+
+);
 
 }
 

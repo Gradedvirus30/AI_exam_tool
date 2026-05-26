@@ -4,86 +4,46 @@ import { useState } from "react";
 function Revision(){
 
 const [topic,setTopic]=useState("");
-
 const [revision,setRevision]=useState("");
-
 
 const generateRevision=async()=>{
 
-try{
+const response=await axios.post(
 
-const response=
-await axios.post(
 "https://aiexamtool-production.up.railway.app/revision",
+
 {
-topic:topic
+topic
 }
+
 );
 
 setRevision(
 response.data.revision
 );
 
-}
-
-catch{
-
-setRevision(
-"Failed"
-);
-
-}
-
 };
-
-
 
 return(
 
 <div className="card">
 
-<h3>Revision Sheet</h3>
+<h3>Revision</h3>
 
 <input
-
 type="text"
-
-placeholder="Enter topic..."
-
+placeholder="Enter topic"
 value={topic}
-
-onChange={(e)=>
-setTopic(
-e.target.value
-)
-}
-
+onChange={(e)=>setTopic(e.target.value)}
 />
 
+<button onClick={generateRevision}>
 
-<button
-onClick={askQuestion}
-disabled={loading}
->
-
-{loading
-?
-"⏳ Generating..."
-:
-"❓ Ask"}
+🧠 Generate
 
 </button>
 
-
-<div className="response-box">
-
-<pre>
-
-{revision}
-
-</pre>
-
-</div>
+<p>{revision}</p>
 
 </div>
 

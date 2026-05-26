@@ -4,39 +4,25 @@ import { useState } from "react";
 function Flashcards(){
 
 const [topic,setTopic]=useState("");
-
 const [flashcards,setFlashcards]=useState("");
-
 
 const generateFlashcards=async()=>{
 
-try{
+const response=await axios.post(
 
-const response=
-await axios.post(
 "https://aiexamtool-production.up.railway.app/flashcards",
+
 {
-topic:topic
+topic
 }
+
 );
 
 setFlashcards(
 response.data.flashcards
 );
 
-}
-
-catch{
-
-setFlashcards(
-"Failed"
-);
-
-}
-
 };
-
-
 
 return(
 
@@ -45,45 +31,19 @@ return(
 <h3>Flashcards</h3>
 
 <input
-
 type="text"
-
-placeholder="Enter topic..."
-
+placeholder="Enter topic"
 value={topic}
-
-onChange={(e)=>
-setTopic(
-e.target.value
-)
-}
-
+onChange={(e)=>setTopic(e.target.value)}
 />
 
+<button onClick={generateFlashcards}>
 
-<button
-onClick={askQuestion}
-disabled={loading}
->
-
-{loading
-?
-"⏳ Generating..."
-:
-"❓ Ask"}
+🗂 Generate
 
 </button>
 
-
-<div className="response-box">
-
-<pre>
-
-{flashcards}
-
-</pre>
-
-</div>
+<p>{flashcards}</p>
 
 </div>
 

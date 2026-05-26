@@ -4,39 +4,25 @@ import { useState } from "react";
 function Summary(){
 
 const [topic,setTopic]=useState("");
-
 const [summary,setSummary]=useState("");
-
 
 const generateSummary=async()=>{
 
-try{
+const response=await axios.post(
 
-const response=
-await axios.post(
 "https://aiexamtool-production.up.railway.app/summary",
+
 {
-topic:topic
+topic
 }
+
 );
 
 setSummary(
 response.data.summary
 );
 
-}
-
-catch{
-
-setSummary(
-"Failed"
-);
-
-}
-
 };
-
-
 
 return(
 
@@ -45,45 +31,19 @@ return(
 <h3>Summary</h3>
 
 <input
-
 type="text"
-
-placeholder="Enter topic..."
-
+placeholder="Enter topic"
 value={topic}
-
-onChange={(e)=>
-setTopic(
-e.target.value
-)
-}
-
+onChange={(e)=>setTopic(e.target.value)}
 />
 
+<button onClick={generateSummary}>
 
-<button
-onClick={askQuestion}
-disabled={loading}
->
-
-{loading
-?
-"⏳ Generating..."
-:
-"❓ Ask"}
+📝 Generate
 
 </button>
 
-
-<div className="response-box">
-
-<pre>
-
-{summary}
-
-</pre>
-
-</div>
+<p>{summary}</p>
 
 </div>
 

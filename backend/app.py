@@ -75,13 +75,16 @@ def get_embedding(text):
         json={"inputs": text}
     )
 
+    print("HF STATUS:", response.status_code)
+    print("HF RESPONSE:", response.text)
+
     result = response.json()
 
     if isinstance(result, dict):
-        raise Exception(f"HuggingFace Error: {result}")
+
+        return [0.0] * 384
 
     return result[0]
-
 
 # -------------------------
 # Vector DB

@@ -14,7 +14,7 @@ try{
 
 const response=
 await axios.post(
-"http://127.0.0.1:8000/flashcards",
+"https://aiexamtool-production.up.railway.app/flashcards",
 {
 topic:topic
 }

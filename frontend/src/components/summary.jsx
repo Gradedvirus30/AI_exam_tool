@@ -14,7 +14,7 @@ try{
 
 const response=
 await axios.post(
-"http://127.0.0.1:8000/summary",
+"https://aiexamtool-production.up.railway.app/summary",
 {
 topic:topic
 }
@@ -77,9 +77,11 @@ disabled={loading}
 
 <div className="response-box">
 
-<div style={{whiteSpace:"pre-wrap"}}>
+<pre>
 
 {summary}
+
+</pre>
 
 </div>
 

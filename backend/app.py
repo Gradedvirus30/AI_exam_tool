@@ -7,7 +7,19 @@ from sentence_transformers import SentenceTransformer
 import chromadb
 import requests
 
+from groq import Groq
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+
 app = FastAPI()
+
+client_groq = Groq(
+    api_key=os.getenv(
+        "GROQ_API_KEY"
+    )
+)
 
 app.add_middleware(
     CORSMiddleware,
@@ -16,6 +28,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 # -------------------------
 # Request Models
@@ -62,33 +75,25 @@ collection = client.get_or_create_collection(
 
 
 # -------------------------
-# Shared Ollama Function
+# Shared AI Function
 # -------------------------
 
 def generate_from_ollama(prompt):
 
-    try:
+    completion = client_groq.chat.completions.create(
 
-        response = requests.post(
-            "http://localhost:11434/api/generate",
-            json={
-                "model": "phi3:mini",
-                "prompt": prompt,
-                "stream": False,
-                "keep_alive": "10m"
-            },
-            timeout=60
-        )
+        messages=[
+            {
+                "role": "user",
+                "content": prompt
+            }
+        ],
 
-        response.raise_for_status()
+        model="llama-3.3-70b-versatile"
 
-        result = response.json()
+    )
 
-        return result["response"]
-
-    except Exception as e:
-
-        return f"Error from Ollama: {str(e)}"
+    return completion.choices[0].message.content
 
 
 # -------------------------
@@ -216,7 +221,7 @@ async def generate_summary(data: SummaryRequest):
 
     results = collection.query(
         query_texts=[data.topic],
-        n_results=2
+        n_results=4
     )
 
     if not results["documents"][0]:
@@ -233,12 +238,16 @@ async def generate_summary(data: SummaryRequest):
 Context:
 {context}
 
-Generate short exam notes.
+Create detailed exam notes.
 
 Rules:
-- Maximum 6 bullet points
-- Use only information from context
-- Keep concise
+- 10–12 bullet points
+- Include definitions
+- Include important concepts
+- Include important formulas if available
+- Include key facts students should remember
+- Use only context
+- Keep the explanation exam-oriented
 """
 
     summary = generate_from_ollama(
@@ -325,12 +334,17 @@ IMPORTANT:
         "quiz": quiz
     }
 
+
+# -------------------------
+# Revision
+# -------------------------
+
 @app.post("/revision")
 async def generate_revision(data: RevisionRequest):
 
     results = collection.query(
         query_texts=[data.topic],
-        n_results=1
+        n_results=3
     )
 
     if not results["documents"][0]:
@@ -348,12 +362,13 @@ Context:
 Create a one-night-before-exam revision sheet.
 
 Rules:
-- Important concepts
-- Must remember points
-- Exam tips
-- Maximum 6 bullet points
-- Keep concise
+- 10–12 bullet points
+- Include definitions
+- Include important concepts
+- Include important formulas if available
+- Include key facts students should remember
 - Use only context
+- Keep the explanation exam-oriented
 """
 
     revision = generate_from_ollama(
@@ -367,16 +382,17 @@ Rules:
 
     }
 
-class FlashcardRequest(BaseModel):
-    topic: str
 
+# -------------------------
+# Flashcards
+# -------------------------
 
 @app.post("/flashcards")
 async def generate_flashcards(data: FlashcardRequest):
 
     results = collection.query(
         query_texts=[data.topic],
-        n_results=1
+        n_results=2
     )
 
     if not results["documents"][0]:

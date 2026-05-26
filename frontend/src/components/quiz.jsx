@@ -1,9 +1,10 @@
 import axios from "axios";
-import {useState} from "react";
+import { useState } from "react";
 
-function Quiz(){
+function Quiz() {
 
 const [topic,setTopic]=useState("");
+
 const [quiz,setQuiz]=useState("");
 
 const generateQuiz=async()=>{
@@ -18,9 +19,25 @@ topic:topic
 }
 );
 
-setQuiz(
-response.data.quiz
-);
+let text=response.data.quiz;
+
+text=text
+
+.replace(/MCQ\s*\d+/g,"\n\n$&")
+
+.replace(/Short Question\s*\d*/g,"\n\n$&")
+
+.replace(/Long Question/g,"\n\nLong Question")
+
+.replace(/A\)/g,"\nA)")
+
+.replace(/B\)/g,"\nB)")
+
+.replace(/C\)/g,"\nC)")
+
+.replace(/D\)/g,"\nD)");
+
+setQuiz(text);
 
 }
 
@@ -34,6 +51,7 @@ setQuiz(
 
 };
 
+
 return(
 
 <div className="card">
@@ -41,20 +59,44 @@ return(
 <h3>Quiz</h3>
 
 <input
+
 type="text"
+
 placeholder="Enter topic..."
+
 value={topic}
 
 onChange={(e)=>
-setTopic(e.target.value)
+setTopic(
+e.target.value
+)
 }
+
 />
 
-<button onClick={generateQuiz}>
-Generate
+<button
+onClick={askQuestion}
+disabled={loading}
+>
+
+{loading
+?
+"⏳ Generating..."
+:
+"❓ Ask"}
+
 </button>
 
-<p>{quiz}</p>
+
+<div className="response-box">
+
+<pre>
+
+{quiz}
+
+</pre>
+
+</div>
 
 </div>
 

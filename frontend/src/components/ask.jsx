@@ -1,5 +1,5 @@
 import axios from "axios";
-import {useState} from "react";
+import { useState } from "react";
 
 function Ask(){
 
@@ -7,8 +7,12 @@ const [question,setQuestion]=useState("");
 
 const [answer,setAnswer]=useState("");
 
+const [loading,setLoading]=useState(false);
+
 
 const askQuestion=async()=>{
+
+setLoading(true);
 
 try{
 
@@ -34,12 +38,15 @@ response.data.answer
 catch{
 
 setAnswer(
-"Failed"
+"Failed to generate answer"
 );
 
 }
 
+setLoading(false);
+
 };
+
 
 
 return(
@@ -64,19 +71,41 @@ e.target.value
 
 />
 
+
 <button
+
 onClick={askQuestion}
+
+disabled={loading}
+
 >
 
-Ask
+{
+
+loading
+
+?
+
+"⏳ Generating..."
+
+:
+
+"❓ Ask"
+
+}
 
 </button>
 
-<p>
+
+<div className="response-box">
+
+<pre>
 
 {answer}
 
-</p>
+</pre>
+
+</div>
 
 </div>
 

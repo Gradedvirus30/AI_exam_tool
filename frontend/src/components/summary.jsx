@@ -1,10 +1,12 @@
 import axios from "axios";
-import {useState} from "react";
+import { useState } from "react";
 
 function Summary(){
 
 const [topic,setTopic]=useState("");
+
 const [summary,setSummary]=useState("");
+
 
 const generateSummary=async()=>{
 
@@ -34,6 +36,8 @@ setSummary(
 
 };
 
+
+
 return(
 
 <div className="card">
@@ -41,20 +45,43 @@ return(
 <h3>Summary</h3>
 
 <input
+
 type="text"
+
 placeholder="Enter topic..."
+
 value={topic}
 
 onChange={(e)=>
-setTopic(e.target.value)
+setTopic(
+e.target.value
+)
 }
+
 />
 
-<button onClick={generateSummary}>
-Generate
+
+<button
+onClick={askQuestion}
+disabled={loading}
+>
+
+{loading
+?
+"⏳ Generating..."
+:
+"❓ Ask"}
+
 </button>
 
-<p>{summary}</p>
+
+<div className="response-box">
+
+<div style={{whiteSpace:"pre-wrap"}}>
+
+{summary}
+
+</div>
 
 </div>
 

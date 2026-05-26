@@ -1,11 +1,17 @@
 import axios from "axios";
-import {useState} from "react";
+import { useState } from "react";
 
 function Upload(){
 
 const [file,setFile]=useState(null);
 
 const [message,setMessage]=useState("");
+
+const [uploadedName,setUploadedName]=useState(
+
+localStorage.getItem("uploadedFile") || ""
+
+);
 
 
 const uploadPDF=async()=>{
@@ -17,6 +23,7 @@ setMessage(
 );
 
 return;
+
 }
 
 const formData=
@@ -31,13 +38,32 @@ try{
 
 const response=
 await axios.post(
+
 "http://127.0.0.1:8000/upload",
+
 formData
+
 );
 
+const filename=
+response.data.filename;
+
 setMessage(
-`Uploaded successfully:
-${response.data.filename}`
+
+`✅ Uploaded: ${filename}`
+
+);
+
+localStorage.setItem(
+
+"uploadedFile",
+
+filename
+
+);
+
+setUploadedName(
+filename
 );
 
 }
@@ -53,6 +79,7 @@ setMessage(
 };
 
 
+
 return(
 
 <div className="card">
@@ -60,7 +87,9 @@ return(
 <h3>Upload Notes</h3>
 
 <input
+
 type="file"
+
 accept=".pdf"
 
 onChange={(e)=>
@@ -68,23 +97,42 @@ setFile(
 e.target.files[0]
 )
 }
+
 />
+
 
 <button
 onClick={uploadPDF}
 >
 
-Upload
+📤 Upload
 
 </button>
+
 
 <p className="warning">
 
 ⚠ Recommended:
 Keep PDFs under 100 pages
-for faster processing
 
 </p>
+
+
+{uploadedName && (
+
+<p>
+
+📄 Current PDF:
+
+<b>
+
+ {uploadedName}
+
+</b>
+
+</p>
+
+)}
 
 <p>
 

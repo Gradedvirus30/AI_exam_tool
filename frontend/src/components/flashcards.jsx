@@ -1,10 +1,12 @@
 import axios from "axios";
-import {useState} from "react";
+import { useState } from "react";
 
 function Flashcards(){
 
 const [topic,setTopic]=useState("");
+
 const [flashcards,setFlashcards]=useState("");
+
 
 const generateFlashcards=async()=>{
 
@@ -34,6 +36,8 @@ setFlashcards(
 
 };
 
+
+
 return(
 
 <div className="card">
@@ -41,20 +45,45 @@ return(
 <h3>Flashcards</h3>
 
 <input
+
 type="text"
+
 placeholder="Enter topic..."
+
 value={topic}
 
 onChange={(e)=>
-setTopic(e.target.value)
+setTopic(
+e.target.value
+)
 }
+
 />
 
-<button onClick={generateFlashcards}>
-Generate
+
+<button
+onClick={askQuestion}
+disabled={loading}
+>
+
+{loading
+?
+"⏳ Generating..."
+:
+"❓ Ask"}
+
 </button>
 
-<p>{flashcards}</p>
+
+<div className="response-box">
+
+<pre>
+
+{flashcards}
+
+</pre>
+
+</div>
 
 </div>
 

@@ -1,10 +1,12 @@
 import axios from "axios";
-import {useState} from "react";
+import { useState } from "react";
 
 function Revision(){
 
 const [topic,setTopic]=useState("");
+
 const [revision,setRevision]=useState("");
+
 
 const generateRevision=async()=>{
 
@@ -34,6 +36,8 @@ setRevision(
 
 };
 
+
+
 return(
 
 <div className="card">
@@ -41,20 +45,45 @@ return(
 <h3>Revision Sheet</h3>
 
 <input
+
 type="text"
+
 placeholder="Enter topic..."
+
 value={topic}
 
 onChange={(e)=>
-setTopic(e.target.value)
+setTopic(
+e.target.value
+)
 }
+
 />
 
-<button onClick={generateRevision}>
-Generate
+
+<button
+onClick={askQuestion}
+disabled={loading}
+>
+
+{loading
+?
+"⏳ Generating..."
+:
+"❓ Ask"}
+
 </button>
 
-<p>{revision}</p>
+
+<div className="response-box">
+
+<pre>
+
+{revision}
+
+</pre>
+
+</div>
 
 </div>
 

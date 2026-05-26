@@ -1,6 +1,6 @@
 import "./App.css";
 
-import { useState } from "react";
+import {useState} from "react";
 
 import Upload from "./components/Upload";
 import Ask from "./components/Ask";
@@ -9,8 +9,7 @@ import Revision from "./components/Revision";
 import Quiz from "./components/Quiz";
 import Flashcards from "./components/Flashcards";
 
-
-function App() {
+function App(){
 
 const [activeTab,setActiveTab]=
 useState("upload");
@@ -26,10 +25,16 @@ return(
 
 
 <button
+className={
+activeTab==="upload"
+?
+"active"
+:
+""
+}
+
 onClick={()=>
-setActiveTab(
-"upload"
-)
+setActiveTab("upload")
 }
 >
 
@@ -39,10 +44,16 @@ setActiveTab(
 
 
 <button
+className={
+activeTab==="ask"
+?
+"active"
+:
+""
+}
+
 onClick={()=>
-setActiveTab(
-"ask"
-)
+setActiveTab("ask")
 }
 >
 
@@ -52,10 +63,16 @@ setActiveTab(
 
 
 <button
+className={
+activeTab==="summary"
+?
+"active"
+:
+""
+}
+
 onClick={()=>
-setActiveTab(
-"summary"
-)
+setActiveTab("summary")
 }
 >
 
@@ -65,10 +82,16 @@ setActiveTab(
 
 
 <button
+className={
+activeTab==="revision"
+?
+"active"
+:
+""
+}
+
 onClick={()=>
-setActiveTab(
-"revision"
-)
+setActiveTab("revision")
 }
 >
 
@@ -78,10 +101,16 @@ setActiveTab(
 
 
 <button
+className={
+activeTab==="quiz"
+?
+"active"
+:
+""
+}
+
 onClick={()=>
-setActiveTab(
-"quiz"
-)
+setActiveTab("quiz")
 }
 >
 
@@ -91,10 +120,16 @@ setActiveTab(
 
 
 <button
+className={
+activeTab==="flashcards"
+?
+"active"
+:
+""
+}
+
 onClick={()=>
-setActiveTab(
-"flashcards"
-)
+setActiveTab("flashcards")
 }
 >
 
@@ -105,35 +140,21 @@ setActiveTab(
 </div>
 
 
-
 <div className="main">
 
 <h1>Dashboard</h1>
 
+{activeTab==="upload" && <Upload/>}
 
-{activeTab==="upload"
-&& <Upload/>}
+{activeTab==="ask" && <Ask/>}
 
+{activeTab==="summary" && <Summary/>}
 
-{activeTab==="ask"
-&& <Ask/>}
+{activeTab==="revision" && <Revision/>}
 
+{activeTab==="quiz" && <Quiz/>}
 
-{activeTab==="summary"
-&& <Summary/>}
-
-
-{activeTab==="revision"
-&& <Revision/>}
-
-
-{activeTab==="quiz"
-&& <Quiz/>}
-
-
-{activeTab==="flashcards"
-&& <Flashcards/>}
-
+{activeTab==="flashcards" && <Flashcards/>}
 
 </div>
 

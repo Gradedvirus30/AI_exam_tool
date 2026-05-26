@@ -4,7 +4,6 @@ import {useState} from "react";
 function Ask(){
 
 const [question,setQuestion]=useState("");
-
 const [answer,setAnswer]=useState("");
 
 const askQuestion=async()=>{
@@ -20,7 +19,7 @@ question
 {
 headers:{
 
-session_id:
+"session-id":
 localStorage.getItem(
 "session_id"
 )

@@ -75,9 +75,12 @@ def get_embedding(text):
         json={"inputs": text}
     )
 
-    embedding = response.json()
+    result = response.json()
 
-    return embedding[0]
+    if isinstance(result, dict):
+        raise Exception(f"HuggingFace Error: {result}")
+
+    return result[0]
 
 
 # -------------------------

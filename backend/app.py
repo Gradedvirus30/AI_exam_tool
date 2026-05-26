@@ -13,6 +13,8 @@ import os
 
 load_dotenv()
 
+os.makedirs("uploads", exist_ok=True)
+
 app = FastAPI()
 
 client_groq = Groq(

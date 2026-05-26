@@ -28,7 +28,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
 # -------------------------
 # Request Models
 # -------------------------
@@ -82,7 +81,7 @@ def get_embedding(text):
 
 
 # -------------------------
-# Vector Database
+# Vector DB
 # -------------------------
 
 client = chromadb.Client()
@@ -93,7 +92,7 @@ collection = client.get_or_create_collection(
 
 
 # -------------------------
-# AI Generation
+# AI generation
 # -------------------------
 
 def generate_from_ai(prompt):
@@ -101,8 +100,8 @@ def generate_from_ai(prompt):
     completion = client_groq.chat.completions.create(
         messages=[
             {
-                "role":"user",
-                "content":prompt
+                "role": "user",
+                "content": prompt
             }
         ],
         model="llama-3.3-70b-versatile"
@@ -133,7 +132,6 @@ async def upload_pdf(file: UploadFile):
     file_path = f"uploads/{file.filename}"
 
     with open(file_path,"wb") as f:
-
         f.write(await file.read())
 
     reader = PdfReader(file_path)
@@ -145,8 +143,8 @@ async def upload_pdf(file: UploadFile):
         extracted = page.extract_text()
 
         if extracted:
-
             text += extracted
+
 
     splitter = RecursiveCharacterTextSplitter(
         chunk_size=500,
@@ -181,8 +179,10 @@ async def upload_pdf(file: UploadFile):
     )
 
     return {
-        "filename":file.filename,
-        "total_chunks":len(chunks)
+
+        "filename": file.filename,
+        "total_chunks": len(chunks)
+
     }
 
 
@@ -194,16 +194,13 @@ async def upload_pdf(file: UploadFile):
 async def ask_question(data: Question):
 
     results = collection.query(
-        query_embeddings=[
-            get_embedding(data.question)
-        ],
+        query_texts=[data.question],
         n_results=1
     )
 
     context = results["documents"][0][0]
 
-    answer = generate_from_ai(
-f"""
+    prompt=f"""
 Context:
 {context}
 
@@ -212,12 +209,10 @@ Question:
 
 Maximum 3 sentences.
 """
-)
 
-    return {
-        "question":data.question,
-        "answer":answer
-    }
+    answer=generate_from_ai(prompt)
+
+    return {"answer":answer}
 
 
 # -------------------------
@@ -228,33 +223,24 @@ Maximum 3 sentences.
 async def generate_summary(data: SummaryRequest):
 
     results = collection.query(
-        query_embeddings=[
-            get_embedding(data.topic)
-        ],
+        query_texts=[data.topic],
         n_results=4
     )
 
-    context = "\n".join(
+    context="\n".join(
         results["documents"][0]
     )
 
-    summary = generate_from_ai(
+    output=generate_from_ai(
 f"""
 Context:
 {context}
 
 Create detailed exam notes.
-
-Rules:
-- 10–12 bullet points
-- Include formulas if present
-- Exam-oriented
 """
 )
 
-    return {
-        "summary":summary
-    }
+    return {"summary":output}
 
 
 # -------------------------
@@ -264,27 +250,23 @@ Rules:
 @app.post("/revision")
 async def generate_revision(data: RevisionRequest):
 
-    results = collection.query(
-        query_embeddings=[
-            get_embedding(data.topic)
-        ],
-        n_results=3
+    results=collection.query(
+        query_texts=[data.topic],
+        n_results=2
     )
 
-    context = results["documents"][0][0]
+    context=results["documents"][0][0]
 
-    revision = generate_from_ai(
+    output=generate_from_ai(
 f"""
 Context:
 {context}
 
-Create one-night-before-exam revision notes.
+Create concise revision sheet.
 """
 )
 
-    return {
-        "revision":revision
-    }
+    return {"revision":output}
 
 
 # -------------------------
@@ -294,34 +276,25 @@ Create one-night-before-exam revision notes.
 @app.post("/quiz")
 async def generate_quiz(data: QuizRequest):
 
-    results = collection.query(
-        query_embeddings=[
-            get_embedding(data.topic)
-        ],
+    results=collection.query(
+        query_texts=[data.topic],
         n_results=3
     )
 
-    context = "\n".join(
+    context="\n".join(
         results["documents"][0]
     )
 
-    quiz = generate_from_ai(
+    output=generate_from_ai(
 f"""
 Context:
 {context}
 
-Create:
-- 3 MCQs
-- 2 short questions
-- 1 long question
-
-No answers.
+Create MCQs and exam questions.
 """
 )
 
-    return {
-        "quiz":quiz
-    }
+    return {"quiz":output}
 
 
 # -------------------------
@@ -331,30 +304,20 @@ No answers.
 @app.post("/flashcards")
 async def generate_flashcards(data: FlashcardRequest):
 
-    results = collection.query(
-        query_embeddings=[
-            get_embedding(data.topic)
-        ],
+    results=collection.query(
+        query_texts=[data.topic],
         n_results=2
     )
 
-    context = results["documents"][0][0]
+    context=results["documents"][0][0]
 
-    flashcards = generate_from_ai(
+    output=generate_from_ai(
 f"""
 Context:
 {context}
 
-Create exactly 3 flashcards.
-
-Format:
-
-Flashcard:
-Q:
-A:
+Create 3 flashcards.
 """
 )
 
-    return {
-        "flashcards":flashcards
-    }
+    return {"flashcards":output}

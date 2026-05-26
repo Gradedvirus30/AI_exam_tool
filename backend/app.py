@@ -3,7 +3,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from pypdf import PdfReader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from sentence_transformers import SentenceTransformer
 import chromadb
 import requests
 
@@ -18,19 +17,16 @@ os.makedirs("uploads", exist_ok=True)
 app = FastAPI()
 
 client_groq = Groq(
-    api_key=os.getenv(
-        "GROQ_API_KEY"
-    )
+    api_key=os.getenv("GROQ_API_KEY")
 )
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
 
 # -------------------------
 # Request Models
@@ -57,16 +53,35 @@ class FlashcardRequest(BaseModel):
 
 
 # -------------------------
-# Embedding Model
+# HuggingFace Embeddings
 # -------------------------
 
-embedding_model = SentenceTransformer(
-    "all-MiniLM-L6-v2"
-)
+HF_TOKEN = os.getenv("HF_TOKEN")
+
+def get_embedding(text):
+
+    API_URL = (
+        "https://api-inference.huggingface.co/pipeline/feature-extraction/"
+        "sentence-transformers/all-MiniLM-L6-v2"
+    )
+
+    headers = {
+        "Authorization": f"Bearer {HF_TOKEN}"
+    }
+
+    response = requests.post(
+        API_URL,
+        headers=headers,
+        json={"inputs": text}
+    )
+
+    embedding = response.json()
+
+    return embedding[0]
 
 
 # -------------------------
-# Vector Database
+# Vector DB
 # -------------------------
 
 client = chromadb.Client()
@@ -77,22 +92,19 @@ collection = client.get_or_create_collection(
 
 
 # -------------------------
-# Shared AI Function
+# AI generation
 # -------------------------
 
-def generate_from_ollama(prompt):
+def generate_from_ai(prompt):
 
     completion = client_groq.chat.completions.create(
-
         messages=[
             {
                 "role": "user",
                 "content": prompt
             }
         ],
-
         model="llama-3.3-70b-versatile"
-
     )
 
     return completion.choices[0].message.content
@@ -106,7 +118,7 @@ def generate_from_ollama(prompt):
 def home():
 
     return {
-        "message": "Exam Prep Assistant running"
+        "message":"Exam Prep Assistant running"
     }
 
 
@@ -119,7 +131,7 @@ async def upload_pdf(file: UploadFile):
 
     file_path = f"uploads/{file.filename}"
 
-    with open(file_path, "wb") as f:
+    with open(file_path,"wb") as f:
         f.write(await file.read())
 
     reader = PdfReader(file_path)
@@ -133,6 +145,7 @@ async def upload_pdf(file: UploadFile):
         if extracted:
             text += extracted
 
+
     splitter = RecursiveCharacterTextSplitter(
         chunk_size=500,
         chunk_overlap=100
@@ -140,9 +153,13 @@ async def upload_pdf(file: UploadFile):
 
     chunks = splitter.split_text(text)
 
-    embeddings = embedding_model.encode(
-        chunks
-    )
+    embeddings = [
+
+        get_embedding(chunk)
+
+        for chunk in chunks
+
+    ]
 
     existing = collection.get()
 
@@ -154,7 +171,7 @@ async def upload_pdf(file: UploadFile):
 
     collection.add(
         documents=chunks,
-        embeddings=embeddings.tolist(),
+        embeddings=embeddings,
         ids=[
             f"{file.filename}_{i}"
             for i in range(len(chunks))
@@ -164,14 +181,13 @@ async def upload_pdf(file: UploadFile):
     return {
 
         "filename": file.filename,
-        "total_chunks": len(chunks),
-        "embeddings_created": len(embeddings)
+        "total_chunks": len(chunks)
 
     }
 
 
 # -------------------------
-# Ask Questions
+# Ask
 # -------------------------
 
 @app.post("/ask")
@@ -182,36 +198,21 @@ async def ask_question(data: Question):
         n_results=1
     )
 
-    if not results["documents"][0]:
-
-        return {
-            "error": "No matching notes found"
-        }
-
     context = results["documents"][0][0]
 
-    prompt = f"""
+    prompt=f"""
 Context:
 {context}
 
 Question:
 {data.question}
 
-Rules:
-- Maximum 3 sentences
-- Answer only from context
+Maximum 3 sentences.
 """
 
-    answer = generate_from_ollama(
-        prompt
-    )
+    answer=generate_from_ai(prompt)
 
-    return {
-
-        "question": data.question,
-        "answer": answer
-
-    }
+    return {"answer":answer}
 
 
 # -------------------------
@@ -226,115 +227,20 @@ async def generate_summary(data: SummaryRequest):
         n_results=4
     )
 
-    if not results["documents"][0]:
-
-        return {
-            "error": "No matching notes found"
-        }
-
-    context = "\n".join(
+    context="\n".join(
         results["documents"][0]
     )
 
-    prompt = f"""
+    output=generate_from_ai(
+f"""
 Context:
 {context}
 
 Create detailed exam notes.
-
-Rules:
-- 10–12 bullet points
-- Include definitions
-- Include important concepts
-- Include important formulas if available
-- Include key facts students should remember
-- Use only context
-- Keep the explanation exam-oriented
 """
+)
 
-    summary = generate_from_ollama(
-        prompt
-    )
-
-    return {
-
-        "topic": data.topic,
-        "summary": summary
-
-    }
-
-
-# -------------------------
-# Quiz
-# -------------------------
-
-@app.post("/quiz")
-async def generate_quiz(data: QuizRequest):
-
-    results = collection.query(
-        query_texts=[data.topic],
-        n_results=2
-    )
-
-    if not results["documents"][0]:
-
-        return {
-            "error": "No matching notes found"
-        }
-
-    context = "\n".join(
-        results["documents"][0]
-    )
-
-    prompt = f"""
-Context:
-{context}
-
-You MUST generate exactly:
-
-MCQ 1:
-Question:
-A)
-B)
-C)
-D)
-
-MCQ 2:
-Question:
-A)
-B)
-C)
-D)
-
-MCQ 3:
-Question:
-A)
-B)
-C)
-D)
-
-Short Question 1:
-
-Short Question 2:
-
-Long Question:
-
-IMPORTANT:
-- Do not skip any section
-- Create all 6 questions
-- No answers
-- Use only context information
-- If context is limited, still create all sections
-"""
-
-    quiz = generate_from_ollama(
-        prompt
-    )
-
-    return {
-        "topic": data.topic,
-        "quiz": quiz
-    }
+    return {"summary":output}
 
 
 # -------------------------
@@ -344,45 +250,51 @@ IMPORTANT:
 @app.post("/revision")
 async def generate_revision(data: RevisionRequest):
 
-    results = collection.query(
+    results=collection.query(
+        query_texts=[data.topic],
+        n_results=2
+    )
+
+    context=results["documents"][0][0]
+
+    output=generate_from_ai(
+f"""
+Context:
+{context}
+
+Create concise revision sheet.
+"""
+)
+
+    return {"revision":output}
+
+
+# -------------------------
+# Quiz
+# -------------------------
+
+@app.post("/quiz")
+async def generate_quiz(data: QuizRequest):
+
+    results=collection.query(
         query_texts=[data.topic],
         n_results=3
     )
 
-    if not results["documents"][0]:
+    context="\n".join(
+        results["documents"][0]
+    )
 
-        return {
-            "error": "No matching notes found"
-        }
-
-    context = results["documents"][0][0]
-
-    prompt = f"""
+    output=generate_from_ai(
+f"""
 Context:
 {context}
 
-Create a one-night-before-exam revision sheet.
-
-Rules:
-- 10–12 bullet points
-- Include definitions
-- Include important concepts
-- Include important formulas if available
-- Include key facts students should remember
-- Use only context
-- Keep the explanation exam-oriented
+Create MCQs and exam questions.
 """
+)
 
-    revision = generate_from_ollama(
-        prompt
-    )
-
-    return {
-
-        "topic": data.topic,
-        "revision": revision
-
-    }
+    return {"quiz":output}
 
 
 # -------------------------
@@ -392,53 +304,20 @@ Rules:
 @app.post("/flashcards")
 async def generate_flashcards(data: FlashcardRequest):
 
-    results = collection.query(
+    results=collection.query(
         query_texts=[data.topic],
         n_results=2
     )
 
-    if not results["documents"][0]:
+    context=results["documents"][0][0]
 
-        return {
-            "error": "No matching notes found"
-        }
-
-    context = results["documents"][0][0]
-
-    prompt = f"""
+    output=generate_from_ai(
+f"""
 Context:
 {context}
 
-Create flashcards.
-
-Format exactly:
-
-Flashcard 1:
-Q:
-A:
-
-Flashcard 2:
-Q:
-A:
-
-Flashcard 3:
-Q:
-A:
-
-Rules:
-- Exactly 3 flashcards
-- Answers maximum 1 sentence
-- Use only context
-- Keep concise
+Create 3 flashcards.
 """
+)
 
-    flashcards = generate_from_ollama(
-        prompt
-    )
-
-    return {
-
-        "topic": data.topic,
-        "flashcards": flashcards
-
-    }
+    return {"flashcards":output}

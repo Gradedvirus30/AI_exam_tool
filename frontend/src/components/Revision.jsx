@@ -14,6 +14,17 @@ const response=await axios.post(
 
 {
 topic
+},
+
+{
+headers:{
+
+session_id:
+localStorage.getItem(
+"session_id"
+)
+
+}
 }
 
 );

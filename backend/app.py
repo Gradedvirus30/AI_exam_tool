@@ -1,4 +1,4 @@
-from fastapi import FastAPI, UploadFile
+from fastapi import FastAPI, UploadFile, Header
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from pypdf import PdfReader
@@ -6,6 +6,7 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from groq import Groq
 from dotenv import load_dotenv
 import os
+import uuid
 
 load_dotenv()
 
@@ -26,22 +27,21 @@ app.add_middleware(
 )
 
 # ---------------------
-# Store chunks in memory
+# Session storage
 # ---------------------
 
-stored_chunks=[]
-
+sessions = {}
 
 # ---------------------
 # Models
 # ---------------------
 
 class Question(BaseModel):
-    question:str
+    question: str
 
 
 class Topic(BaseModel):
-    topic:str
+    topic: str
 
 
 # ---------------------
@@ -50,12 +50,12 @@ class Topic(BaseModel):
 
 def generate(prompt):
 
-    completion=client.chat.completions.create(
+    completion = client.chat.completions.create(
 
         messages=[
             {
-                "role":"user",
-                "content":prompt
+                "role": "user",
+                "content": prompt
             }
         ],
 
@@ -67,40 +67,48 @@ def generate(prompt):
 
 
 # ---------------------
-# Simple retrieval
+# Retrieval
 # ---------------------
 
-def retrieve(query):
+def retrieve(query, session_id):
 
-    query_words=set(
+    chunks = sessions.get(
+        session_id,
+        []
+    )
+
+    query_words = set(
         query.lower().split()
     )
 
-    scores=[]
+    scores = []
 
-    for chunk in stored_chunks:
+    for chunk in chunks:
 
-        chunk_words=set(
+        chunk_words = set(
             chunk.lower().split()
         )
 
-        overlap=len(
+        overlap = len(
             query_words.intersection(
                 chunk_words
             )
         )
 
         scores.append(
-            (overlap,chunk)
+            (overlap, chunk)
         )
 
     scores.sort(
         reverse=True
     )
 
-    top_chunks=[
+    top_chunks = [
+
         chunk
-        for score,chunk in scores[:4]
+
+        for score, chunk in scores[:4]
+
     ]
 
     return "\n".join(
@@ -116,7 +124,7 @@ def retrieve(query):
 def home():
 
     return {
-        "message":"AI Exam Assistant running"
+        "message": "AI Exam Assistant running"
     }
 
 
@@ -125,11 +133,9 @@ def home():
 # ---------------------
 
 @app.post("/upload")
-async def upload(file:UploadFile):
+async def upload(file: UploadFile):
 
-    global stored_chunks
-
-    file_path=f"uploads/{file.filename}"
+    file_path = f"uploads/{file.filename}"
 
     with open(
         file_path,
@@ -140,36 +146,44 @@ async def upload(file:UploadFile):
             await file.read()
         )
 
-    reader=PdfReader(
+    reader = PdfReader(
         file_path
     )
 
-    text=""
+    text = ""
 
     for page in reader.pages:
 
-        extracted=page.extract_text()
+        extracted = page.extract_text()
 
         if extracted:
 
-            text+=extracted
+            text += extracted
 
-
-    splitter=RecursiveCharacterTextSplitter(
+    splitter = RecursiveCharacterTextSplitter(
 
         chunk_size=800,
         chunk_overlap=100
 
     )
 
-    stored_chunks=splitter.split_text(
+    chunks = splitter.split_text(
         text
     )
 
-    return{
+    session_id = str(
+        uuid.uuid4()
+    )
 
-        "filename":file.filename,
-        "chunks":len(stored_chunks)
+    sessions[
+        session_id
+    ] = chunks
+
+    return {
+
+        "filename": file.filename,
+        "chunks": len(chunks),
+        "session_id": session_id
 
     }
 
@@ -179,13 +193,17 @@ async def upload(file:UploadFile):
 # ---------------------
 
 @app.post("/ask")
-async def ask(data:Question):
+async def ask(
+    data: Question,
+    session_id: str = Header(...)
+):
 
-    context=retrieve(
-        data.question
+    context = retrieve(
+        data.question,
+        session_id
     )
 
-    answer=generate(
+    answer = generate(
 f"""
 Context:
 {context}
@@ -197,8 +215,8 @@ Answer using only context.
 """
 )
 
-    return{
-        "answer":answer
+    return {
+        "answer": answer
     }
 
 
@@ -207,13 +225,17 @@ Answer using only context.
 # ---------------------
 
 @app.post("/summary")
-async def summary(data:Topic):
+async def summary(
+    data: Topic,
+    session_id: str = Header(...)
+):
 
-    context=retrieve(
-        data.topic
+    context = retrieve(
+        data.topic,
+        session_id
     )
 
-    output=generate(
+    output = generate(
 f"""
 Context:
 {context}
@@ -222,8 +244,8 @@ Generate detailed study notes.
 """
 )
 
-    return{
-        "summary":output
+    return {
+        "summary": output
     }
 
 
@@ -232,13 +254,17 @@ Generate detailed study notes.
 # ---------------------
 
 @app.post("/revision")
-async def revision(data:Topic):
+async def revision(
+    data: Topic,
+    session_id: str = Header(...)
+):
 
-    context=retrieve(
-        data.topic
+    context = retrieve(
+        data.topic,
+        session_id
     )
 
-    output=generate(
+    output = generate(
 f"""
 Context:
 {context}
@@ -247,8 +273,8 @@ Generate concise revision notes.
 """
 )
 
-    return{
-        "revision":output
+    return {
+        "revision": output
     }
 
 
@@ -257,13 +283,17 @@ Generate concise revision notes.
 # ---------------------
 
 @app.post("/quiz")
-async def quiz(data:Topic):
+async def quiz(
+    data: Topic,
+    session_id: str = Header(...)
+):
 
-    context=retrieve(
-        data.topic
+    context = retrieve(
+        data.topic,
+        session_id
     )
 
-    output=generate(
+    output = generate(
 f"""
 Context:
 {context}
@@ -275,8 +305,8 @@ Generate:
 """
 )
 
-    return{
-        "quiz":output
+    return {
+        "quiz": output
     }
 
 
@@ -285,13 +315,17 @@ Generate:
 # ---------------------
 
 @app.post("/flashcards")
-async def flashcards(data:Topic):
+async def flashcards(
+    data: Topic,
+    session_id: str = Header(...)
+):
 
-    context=retrieve(
-        data.topic
+    context = retrieve(
+        data.topic,
+        session_id
     )
 
-    output=generate(
+    output = generate(
 f"""
 Context:
 {context}
@@ -300,6 +334,6 @@ Generate 3 flashcards.
 """
 )
 
-    return{
-        "flashcards":output
+    return {
+        "flashcards": output
     }

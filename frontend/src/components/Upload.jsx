@@ -13,7 +13,6 @@ localStorage.getItem("uploadedFile") || ""
 
 );
 
-
 const uploadPDF=async()=>{
 
 if(!file){
@@ -48,6 +47,14 @@ formData
 const filename=
 response.data.filename;
 
+localStorage.setItem(
+
+"session_id",
+
+response.data.session_id
+
+);
+
 setMessage(
 
 `✅ Uploaded: ${filename}`
@@ -78,8 +85,6 @@ setMessage(
 
 };
 
-
-
 return(
 
 <div className="card">
@@ -100,7 +105,6 @@ e.target.files[0]
 
 />
 
-
 <button
 onClick={uploadPDF}
 >
@@ -109,14 +113,12 @@ onClick={uploadPDF}
 
 </button>
 
-
 <p className="warning">
 
 ⚠ Recommended:
 Keep PDFs under 100 pages
 
 </p>
-
 
 {uploadedName && (
 
@@ -126,7 +128,7 @@ Keep PDFs under 100 pages
 
 <b>
 
- {uploadedName}
+{uploadedName}
 
 </b>
 

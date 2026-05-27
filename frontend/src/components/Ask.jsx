@@ -1,5 +1,6 @@
 import axios from "axios";
 import {useState} from "react";
+import ReactMarkdown from "react-markdown";
 
 function Ask(){
 
@@ -54,11 +55,15 @@ Ask
 
 </button>
 
-<p>
+<div className="response">
+
+<ReactMarkdown>
 
 {answer}
 
-</p>
+</ReactMarkdown>
+
+</div>
 
 </div>
 

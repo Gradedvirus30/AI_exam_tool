@@ -1,5 +1,6 @@
 import axios from "axios";
 import { useState } from "react";
+import ReactMarkdown from "react-markdown";
 
 function Flashcards(){
 
@@ -54,7 +55,15 @@ onChange={(e)=>setTopic(e.target.value)}
 
 </button>
 
-<p>{flashcards}</p>
+<div className="response">
+
+<ReactMarkdown>
+
+{answer}
+
+</ReactMarkdown>
+
+</div>
 
 </div>
 

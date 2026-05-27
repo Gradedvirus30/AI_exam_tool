@@ -1,5 +1,6 @@
 import axios from "axios";
 import { useState } from "react";
+import ReactMarkdown from "react-markdown";
 
 function Summary(){
 
@@ -54,7 +55,15 @@ onChange={(e)=>setTopic(e.target.value)}
 
 </button>
 
-<p>{summary}</p>
+<div className="response">
+
+<ReactMarkdown>
+
+{answer}
+
+</ReactMarkdown>
+
+</div>
 
 </div>
 

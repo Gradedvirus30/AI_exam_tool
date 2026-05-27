@@ -286,3 +286,57 @@ background:#fee2e2;
 color:#b91c1c;
 
 }
+
+.response{
+
+margin-top:20px;
+padding:15px;
+
+border-radius:10px;
+
+background:#f8f8f8;
+
+text-align:left;
+
+line-height:1.8;
+
+overflow-wrap:break-word;
+
+}
+
+.response ul{
+
+padding-left:25px;
+
+}
+
+.response li{
+
+margin-bottom:8px;
+
+}
+
+.response h1,
+.response h2,
+.response h3{
+
+margin-top:15px;
+margin-bottom:10px;
+
+}
+
+.response p{
+
+margin-bottom:12px;
+
+}
+
+.response code{
+
+background:#eee;
+
+padding:2px 5px;
+
+border-radius:4px;
+
+}

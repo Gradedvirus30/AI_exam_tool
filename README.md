@@ -71,10 +71,6 @@ Backend: Railway
 - Improved retrieval ranking
 - PDF highlighting and annotation
 
-## Screenshots
-
-Add screenshots of the application interface here.
-
 ## Author
 
 Madhav Mohan  

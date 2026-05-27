@@ -59,7 +59,7 @@ onChange={(e)=>setTopic(e.target.value)}
 
 <ReactMarkdown>
 
-{answer}
+{flashcards}
 
 </ReactMarkdown>
 

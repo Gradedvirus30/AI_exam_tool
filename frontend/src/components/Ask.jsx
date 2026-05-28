@@ -36,6 +36,38 @@ response.data.answer
 
 };
 
+const downloadFile=()=>{
+
+const blob=new Blob(
+
+[answer],
+
+{
+type:"text/plain"
+}
+
+);
+
+const url=
+window.URL.createObjectURL(
+blob
+);
+
+const a=
+document.createElement("a");
+
+a.href=url;
+
+a.download="answer.txt";
+
+a.click();
+
+window.URL.revokeObjectURL(
+url
+);
+
+};
+
 return(
 
 <div className="card">
@@ -64,6 +96,16 @@ Ask
 </ReactMarkdown>
 
 </div>
+
+{answer && (
+
+<button onClick={downloadFile}>
+
+⬇ Download
+
+</button>
+
+)}
 
 </div>
 

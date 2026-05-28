@@ -36,6 +36,38 @@ response.data.flashcards
 
 };
 
+const downloadFile=()=>{
+
+const blob=new Blob(
+
+[flashcards],
+
+{
+type:"text/plain"
+}
+
+);
+
+const url=
+window.URL.createObjectURL(
+blob
+);
+
+const a=
+document.createElement("a");
+
+a.href=url;
+
+a.download="flashcards.txt";
+
+a.click();
+
+window.URL.revokeObjectURL(
+url
+);
+
+};
+
 return(
 
 <div className="card">
@@ -51,7 +83,7 @@ onChange={(e)=>setTopic(e.target.value)}
 
 <button onClick={generateFlashcards}>
 
-🗂 Generate
+Generate
 
 </button>
 
@@ -64,6 +96,16 @@ onChange={(e)=>setTopic(e.target.value)}
 </ReactMarkdown>
 
 </div>
+
+{flashcards && (
+
+<button onClick={downloadFile}>
+
+⬇ Download
+
+</button>
+
+)}
 
 </div>
 

@@ -302,10 +302,23 @@ Generate a quiz in this exact format:
 
 QUESTIONS:
 
-MCQs:
-1.
-2.
-3.
+1. Question
+A)
+B)
+C)
+D)
+
+2. Question
+A)
+B)
+C)
+D)
+
+3. Question
+A)
+B)
+C)
+D)
 
 Short Answer Questions:
 1.

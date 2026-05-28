@@ -298,10 +298,35 @@ f"""
 Context:
 {context}
 
-Generate:
-3 MCQs
-2 short questions
-1 long question
+Generate a quiz in this exact format:
+
+QUESTIONS:
+
+MCQs:
+1.
+2.
+3.
+
+Short Answer Questions:
+1.
+2.
+
+Long Answer Question:
+1.
+
+ANSWERS:
+
+MCQ Answers:
+1.
+2.
+3.
+
+Short Answer Solutions:
+1.
+2.
+
+Long Answer Solution:
+1.
 """
 )
 

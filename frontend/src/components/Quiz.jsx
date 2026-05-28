@@ -5,7 +5,12 @@ import ReactMarkdown from "react-markdown";
 function Quiz(){
 
 const [topic,setTopic]=useState("");
-const [quiz,setQuiz]=useState("");
+
+const [questions,setQuestions]=useState("");
+
+const [answers,setAnswers]=useState("");
+
+const [showAnswers,setShowAnswers]=useState(false);
 
 const generateQuiz=async()=>{
 
@@ -30,8 +35,60 @@ localStorage.getItem(
 
 );
 
-setQuiz(
-response.data.quiz
+const fullQuiz=response.data.quiz;
+
+const splitText=fullQuiz.split("ANSWERS:");
+
+setQuestions(
+splitText[0]
+);
+
+setAnswers(
+splitText[1] || "No answers generated."
+);
+
+setShowAnswers(false);
+
+};
+
+const downloadQuiz=()=>{
+
+const content=`
+
+${questions}
+
+ANSWERS:
+
+${answers}
+
+`;
+
+const blob=new Blob(
+
+[content],
+
+{
+type:"text/plain"
+}
+
+);
+
+const url=
+window.URL.createObjectURL(
+blob
+);
+
+const a=
+document.createElement("a");
+
+a.href=url;
+
+a.download="quiz.txt";
+
+a.click();
+
+window.URL.revokeObjectURL(
+url
 );
 
 };
@@ -51,19 +108,61 @@ onChange={(e)=>setTopic(e.target.value)}
 
 <button onClick={generateQuiz}>
 
-🎯 Generate
+🎯 Generate Quiz
 
 </button>
+
+{questions && (
+
+<>
 
 <div className="response">
 
 <ReactMarkdown>
 
-{quiz}
+{questions}
 
 </ReactMarkdown>
 
 </div>
+
+<button
+onClick={()=>
+setShowAnswers(
+!showAnswers
+)
+}
+>
+
+{showAnswers
+? "Hide Answers"
+: "Show Answers"}
+
+</button>
+
+{showAnswers && (
+
+<div className="response">
+
+<ReactMarkdown>
+
+{answers}
+
+</ReactMarkdown>
+
+</div>
+
+)}
+
+<button onClick={downloadQuiz}>
+
+⬇ Download Quiz
+
+</button>
+
+</>
+
+)}
 
 </div>
 

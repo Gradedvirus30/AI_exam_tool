@@ -1,6 +1,7 @@
 import "./App.css";
 
 import {useState} from "react";
+import { Analytics } from '@vercel/analytics/react';
 
 import Upload from "./components/Upload";
 import Ask from "./components/Ask";
@@ -17,6 +18,7 @@ useState("upload");
 
 return(
 
+<>
 <div className="app">
 
 <div className="sidebar">
@@ -159,6 +161,9 @@ setActiveTab("flashcards")
 </div>
 
 </div>
+
+<Analytics />
+</>
 
 );
 

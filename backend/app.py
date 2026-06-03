@@ -241,10 +241,14 @@ async def summary(
     session_id: str = Header(...)
 ):
 
+    print("SUMMARY ENDPOINT HIT")
+
     context = retrieve(
         data.topic,
         session_id
     )
+
+    print("Context length:", len(context))
 
     output = generate(
 f"""
@@ -261,7 +265,13 @@ Ignore unrelated concepts even if they appear in the context.
 Focus strictly on:
 {data.topic}
 """
-)
+    )
+
+    print("Output:", output)
+
+    return {
+        "summary": output
+    }
 
 
 # ---------------------

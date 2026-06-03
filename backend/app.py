@@ -72,22 +72,32 @@ def generate(prompt):
 
 def retrieve(query, session_id):
 
+    STOPWORDS = {
+        "the", "is", "what", "a", "an",
+        "of", "in", "for", "to", "and",
+        "on", "with", "by", "from"
+    }
+
     chunks = sessions.get(
         session_id,
         []
     )
 
-    query_words = set(
-        query.lower().split()
-    )
+    query_words = {
+        word
+        for word in query.lower().split()
+        if word not in STOPWORDS
+    }
 
     scores = []
 
     for chunk in chunks:
 
-        chunk_words = set(
-            chunk.lower().split()
-        )
+        chunk_words = {
+            word
+            for word in chunk.lower().split()
+            if word not in STOPWORDS
+        }
 
         overlap = len(
             query_words.intersection(
@@ -100,6 +110,7 @@ def retrieve(query, session_id):
         )
 
     scores.sort(
+        key=lambda x: x[0],
         reverse=True
     )
 
@@ -107,7 +118,7 @@ def retrieve(query, session_id):
 
         chunk
 
-        for score, chunk in scores[:4]
+        for score, chunk in scores[:3]
 
     ]
 
@@ -237,16 +248,20 @@ async def summary(
 
     output = generate(
 f"""
+Requested Topic:
+{data.topic}
+
 Context:
 {context}
 
-Generate detailed study notes.
+Generate detailed study notes ONLY about the requested topic.
+
+Ignore unrelated concepts even if they appear in the context.
+
+Focus strictly on:
+{data.topic}
 """
 )
-
-    return {
-        "summary": output
-    }
 
 
 # ---------------------
